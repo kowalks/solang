@@ -4,6 +4,7 @@ pub mod abi;
 pub mod codegen;
 #[cfg(feature = "llvm")]
 pub mod emit;
+pub mod intermediate;
 pub mod file_resolver;
 #[cfg(feature = "llvm")]
 mod linker;

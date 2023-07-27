@@ -9,7 +9,8 @@ use super::{
     vector_to_slice, Options,
 };
 use crate::codegen::subexpression_elimination::common_sub_expression_elimination;
-use crate::codegen::{undefined_variable, Expression, LLVMName};
+use crate::codegen::{undefined_variable, LLVMName};
+pub use crate::codegen::Expression;
 use crate::sema::ast::{
     CallTy, Contract, FunctionAttributes, Namespace, Parameter, RetrieveType, Statement,
     StringLocation, StructType, Type,

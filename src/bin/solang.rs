@@ -22,6 +22,7 @@ use std::{
     path::{Path, PathBuf},
     process::exit,
 };
+use solang::intermediate::ssa::StaticSingleAssignment;
 
 use crate::cli::{
     imports_arg, options_arg, target_arg, Cli, Commands, Compile, CompilerOutput, Doc, New,
@@ -314,6 +315,13 @@ fn process_file(
 
     // codegen all the contracts; some additional errors/warnings will be detected here
     codegen(&mut ns, opt);
+
+    for contract in ns.contracts.iter() {
+        for cfg in contract.cfg.iter() {
+            let ssa = StaticSingleAssignment::from_cfg(cfg);
+            print!("hello");
+        }
+    }
 
     if let Some("ast-dot") = compiler_output.emit.as_deref() {
         let filepath = PathBuf::from(filename);
