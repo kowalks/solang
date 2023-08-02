@@ -22,7 +22,7 @@ use std::{
     path::{Path, PathBuf},
     process::exit,
 };
-use solang::intermediate::ssa::StaticSingleAssignment;
+use solang::intermediate::StaticSingleAssignment;
 
 use crate::cli::{
     imports_arg, options_arg, target_arg, Cli, Commands, Compile, CompilerOutput, Doc, New,

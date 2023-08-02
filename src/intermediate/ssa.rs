@@ -1,73 +1,24 @@
 use std::sync::Arc;
-use solang_parser::pt;
+
 use crate::codegen::cfg;
 use crate::codegen::cfg::{ASTFunction, BasicBlock, ControlFlowGraph, Expression};
-use crate::sema::ast::{Parameter, Type};
+use crate::intermediate::{Expr, Inst, Operand, StaticSingleAssignment, ThreeAddressesBlock};
 
-use num_bigint::{BigInt};
-
-#[derive(Clone)]
-pub enum Operand {
-    Variable {
-        ty: Type,
-        res: usize,
-    },
-    Literal {
-        ty: Type,
-        value: BigInt,
-    },
-    TempVar {
-        ty: Type,
-        res: usize,
-    }
-}
-
-pub enum Inst {
-    Set {
-        loc: pt::Loc,
-        res: Operand,
-        expr: Expr,
-    },
-    Call {
-        res: Vec<usize>,
-        call: cfg::InternalCallTy,
-        args: Vec<Expr>,
-    },
-    Return { value: Vec<Expr> },
-    Branch { block: usize },
-}
-
-#[derive(Clone)]
-pub enum Expr {
-    Add {
-        loc: pt::Loc,
-        ty: Type,
-        left: Operand,
-        right: Operand,
-    },
-    Operand {
-        oper: Operand,
-    }
-}
-
-pub struct ThreeAddressesBlock {
-    pub name: String,
-    pub insts: Vec<Inst>,
-}
-
-pub struct StaticSingleAssignment {
-    pub name: String,
-    pub function_no: ASTFunction,
-    pub params: Arc<Vec<Parameter>>,
-    pub returns: Arc<Vec<Parameter>>,
-    pub blocks: Vec<ThreeAddressesBlock>,
-}
-
-impl Operand {
-    fn new_temp_var(ty: Type) -> Self {
-        Operand::TempVar {res: 0, ty}
-    }
-}
+//TODO: create ssa Type
+// enum Type {
+//     Integer(u16), // width
+//     // Address is just Array
+//     // but array is Pointer(Box<Array>)
+//     Bytes(u8), // it can also represented by int (but endianness is opposite, but we should not be worried about it)
+//     UInt(u16),  // width
+//     Bool,
+//     // Rational,
+//
+//     Array{ty: Box<Type>, dim: Vec<usize>},  // fixed-length
+//     Pointer(Box<Type>),
+//     Struct(StructDecl),   // definition of struct ***
+//     StorageReference(),
+// }
 
 impl Inst {
     pub fn from_expression(expression: &Expression) -> Vec<Self> {
@@ -83,7 +34,7 @@ impl Inst {
             } if matches!(**left, Expression::NumberLiteral{ .. }) => {
                 let mut right_inst = Inst::from_expression(right);
                 let value = match **left {
-                    Expression::NumberLiteral{ ref value, .. } => value.clone(),
+                    Expression::NumberLiteral { ref value, .. } => value.clone(),
                     _ => panic!("Error!"),
                 };
 
@@ -117,7 +68,7 @@ impl Inst {
             } if matches!(**right, Expression::NumberLiteral{ .. }) => {
                 let mut left_inst = Inst::from_expression(left);
                 let value = match **right {
-                    Expression::NumberLiteral{ ref value, .. } => value.clone(),
+                    Expression::NumberLiteral { ref value, .. } => value.clone(),
                     _ => panic!("Error!"),
                 };
 
@@ -147,15 +98,15 @@ impl Inst {
             Expression::Add { left, right, loc, ty, .. } => {
                 let mut right_inst = Inst::from_expression(right);
                 let mut left_inst = Inst::from_expression(left);
-                let Some(Inst::Set{res: right_operand, .. }) = right_inst.last() else {
+                let Some(Inst::Set { res: right_operand, .. }) = right_inst.last() else {
                     panic!("Error!");
                 };
-                let Some(Inst::Set{res: left_operand, .. }) = left_inst.last() else {
+                let Some(Inst::Set { res: left_operand, .. }) = left_inst.last() else {
                     panic!("Error!");
                 };
                 let last_inst = Inst::Set {
                     res: Operand::new_temp_var(ty.clone()),
-                    expr: Expr::Add { loc: loc.clone(), ty: ty.clone(), left: left_operand.clone(), right: right_operand.clone()},
+                    expr: Expr::Add { loc: loc.clone(), ty: ty.clone(), left: left_operand.clone(), right: right_operand.clone() },
                     loc: loc.clone()
                 };
                 instr.append(&mut left_inst);
@@ -163,7 +114,7 @@ impl Inst {
                 instr.push(last_inst);
             },
             Expression::NumberLiteral { loc, ty, value } => {
-                let literal = Operand::Literal {ty: ty.clone(), value: value.clone()};
+                let literal = Operand::Literal { ty: ty.clone(), value: value.clone() };
                 let new_inst = Inst::Set {
                     res: Operand::new_temp_var(ty.clone()),
                     loc: loc.clone(),
